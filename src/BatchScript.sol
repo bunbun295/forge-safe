@@ -100,20 +100,20 @@ abstract contract BatchScript is Script {
 
         // Set the Safe API base URL and multisend address based on chain
         if (chainId == 1) {
-            SAFE_API_BASE_URL = "https://safe-transaction-mainnet.safe.global/api/v1/safes/";
-            SAFE_MULTISEND_ADDRESS = 0xA238CBeb142c10Ef7Ad8442C6D1f9E89e07e7761;
+            SAFE_API_BASE_URL = "https://safe-transaction-mainnet.safe.global/api/v2/safes/";
+            SAFE_MULTISEND_ADDRESS = 0x9641d764fc13c8B624c04430C7356C1C7C8102e2;
         } else if (chainId == 5) {
-            SAFE_API_BASE_URL = "https://safe-transaction-goerli.safe.global/api/v1/safes/";
-            SAFE_MULTISEND_ADDRESS = 0xA238CBeb142c10Ef7Ad8442C6D1f9E89e07e7761;
+            SAFE_API_BASE_URL = "https://safe-transaction-goerli.safe.global/api/v2/safes/";
+            SAFE_MULTISEND_ADDRESS = 0x9641d764fc13c8B624c04430C7356C1C7C8102e2;
         } else if (chainId == 8453) {
-            SAFE_API_BASE_URL = "https://safe-transaction-base.safe.global/api/v1/safes/";
-            SAFE_MULTISEND_ADDRESS = 0xA238CBeb142c10Ef7Ad8442C6D1f9E89e07e7761;
+            SAFE_API_BASE_URL = "https://safe-transaction-base.safe.global/api/v2/safes/";
+            SAFE_MULTISEND_ADDRESS = 0x9641d764fc13c8B624c04430C7356C1C7C8102e2;
         } else if (chainId == 42161) {
-            SAFE_API_BASE_URL = "https://safe-transaction-arbitrum.safe.global/api/v1/safes/";
-            SAFE_MULTISEND_ADDRESS = 0xA238CBeb142c10Ef7Ad8442C6D1f9E89e07e7761;
+            SAFE_API_BASE_URL = "https://safe-transaction-arbitrum.safe.global/api/v2/safes/";
+            SAFE_MULTISEND_ADDRESS = 0x9641d764fc13c8B624c04430C7356C1C7C8102e2;
         } else if (chainId == 43114) {
-            SAFE_API_BASE_URL = "https://safe-transaction-avalanche.safe.global/api/v1/safes/";
-            SAFE_MULTISEND_ADDRESS = 0xA238CBeb142c10Ef7Ad8442C6D1f9E89e07e7761;
+            SAFE_API_BASE_URL = "https://safe-transaction-avalanche.safe.global/api/v2/safes/";
+            SAFE_MULTISEND_ADDRESS = 0x9641d764fc13c8B624c04430C7356C1C7C8102e2;
         } else {
             revert("Unsupported chain");
         }
@@ -181,6 +181,8 @@ abstract contract BatchScript is Script {
     // Simulate then send the batch to the Safe API. If `send_` is `false`, the
     // batch will only be simulated.
     function executeBatch(bool send_) internal {
+        if (encodedTxns.length == 0) return;
+
         Batch memory batch = _createBatch(safe);
         // _simulateBatch(safe, batch);
         if (send_) {
@@ -280,7 +282,7 @@ abstract contract BatchScript is Script {
         placeholder.serialize("refundReceiver", address(0));
         placeholder.serialize("contractTransactionHash", batch_.txHash);
         placeholder.serialize("signature", batch_.signature);
-        string memory payload = placeholder.serialize("sender", msg.sender);
+        string memory payload = placeholder.serialize("sender", vm.envAddress("SENDER"));
 
         // Send batch
         (uint256 status, bytes memory data) = endpoint.post(
@@ -447,9 +449,6 @@ abstract contract BatchScript is Script {
         (uint256 status, bytes memory data) = endpoint.get();
         if (status == 200) {
             string memory resp = string(data);
-            string[] memory results;
-            results = resp.readStringArray(".results");
-            if (results.length == 0) return 0;
             return resp.readUint(".results[0].nonce") + 1;
         } else {
             revert("Get nonce failed!");
